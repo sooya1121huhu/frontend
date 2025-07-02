@@ -40,6 +40,7 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import Autocomplete from '@mui/material/Autocomplete';
 import './App.css';
 
 const API_BASE_URL = '';
@@ -68,6 +69,20 @@ function App() {
   const [ownDialogOpen, setOwnDialogOpen] = useState(false);
   const [ownSearchTerm, setOwnSearchTerm] = useState('');
   const [ownBrand, setOwnBrand] = useState('');
+
+  // 향수 추가 관련 상태
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: '',
+    url: '',
+    brand: '',
+    notes: [],
+    season_tags: [],
+    weather_tags: [],
+    analysis_reason: ''
+  });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
 
   // 인증 관련 함수
   const handleAuthTabChange = (_, newValue) => {
@@ -171,6 +186,45 @@ function App() {
       setOwnDialogOpen(false);
     } catch (err) {
       alert(err.message || '보유 향수 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 향수 추가 관련 함수
+  const openAddDialog = () => {
+    setAddForm({
+      name: '', url: '', brand: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
+    });
+    setAddError('');
+    setAddDialogOpen(true);
+  };
+  const closeAddDialog = () => setAddDialogOpen(false);
+
+  const handleAddFormChange = (field, value) => {
+    setAddForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddPerfume = async () => {
+    // 필수값 체크
+    if (!addForm.name || !addForm.brand || !addForm.notes.length || !addForm.season_tags.length || !addForm.weather_tags.length || !addForm.analysis_reason) {
+      setAddError('모든 필수 항목을 입력해주세요.');
+      return;
+    }
+    setAddLoading(true);
+    setAddError('');
+    try {
+      const res = await fetch('/api/perfumes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || '향수 추가 실패');
+      setAddDialogOpen(false);
+      fetchPerfumes();
+    } catch (err) {
+      setAddError(err.message || '향수 추가 중 오류가 발생했습니다.');
+    } finally {
+      setAddLoading(false);
     }
   };
 
@@ -438,8 +492,21 @@ function App() {
       </Paper>
 
       {/* 보유 향수 등록 버튼 */}
-      <Box mb={4} textAlign="right">
-        <Button sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }} onClick={openOwnDialog}>
+      <Box mb={4} textAlign="right" display="flex" justifyContent="flex-end" gap={2}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={openAddDialog}
+          sx={{ boxShadow: 'none', '&:hover': { background: '#1565c0 !important' } }}
+        >
+          향수 데이터베이스 추가
+        </Button>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={openOwnDialog}
+          sx={{ boxShadow: 'none', '&:hover': { background: '#1565c0 !important' } }}
+        >
           + 보유 향수 등록
         </Button>
       </Box>
@@ -610,6 +677,84 @@ function App() {
         <DialogActions>
           <Button onClick={closeOwnDialog}>취소</Button>
           <Button onClick={handleOwnPerfumeSave} variant="contained">등록</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 향수 추가 모달 */}
+      <Dialog open={addDialogOpen} onClose={closeAddDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>향수 데이터베이스 추가</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="향수 이름"
+            value={addForm.name}
+            onChange={e => handleAddFormChange('name', e.target.value)}
+            fullWidth
+            required
+            margin="normal"
+          />
+          <TextField
+            label="상세 정보 URL"
+            value={addForm.url}
+            onChange={e => handleAddFormChange('url', e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="브랜드"
+            value={addForm.brand}
+            onChange={e => handleAddFormChange('brand', e.target.value)}
+            fullWidth
+            required
+            margin="normal"
+          />
+          <Autocomplete
+            multiple
+            freeSolo
+            options={[]}
+            value={addForm.notes}
+            onChange={(_, value) => handleAddFormChange('notes', value)}
+            renderInput={(params) => (
+              <TextField {...params} label="주요 노트 (쉼표 없이 엔터로 구분)" margin="normal" required />
+            )}
+            sx={{ mb: 2 }}
+          />
+          <Autocomplete
+            multiple
+            options={["봄", "여름", "가을", "겨울"]}
+            value={addForm.season_tags}
+            onChange={(_, value) => handleAddFormChange('season_tags', value)}
+            renderInput={(params) => (
+              <TextField {...params} label="어울리는 계절" margin="normal" required />
+            )}
+            sx={{ mb: 2 }}
+          />
+          <Autocomplete
+            multiple
+            options={["맑음", "흐림", "비", "눈", "더움", "추움", "선선함", "습함", "따뜻함", "쌀쌀함"]}
+            value={addForm.weather_tags}
+            onChange={(_, value) => handleAddFormChange('weather_tags', value)}
+            renderInput={(params) => (
+              <TextField {...params} label="어울리는 날씨" margin="normal" required />
+            )}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="분석 이유"
+            value={addForm.analysis_reason}
+            onChange={e => handleAddFormChange('analysis_reason', e.target.value)}
+            fullWidth
+            required
+            multiline
+            minRows={3}
+            margin="normal"
+          />
+          {addError && <Box color="error.main" mb={2}>{addError}</Box>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeAddDialog}>취소</Button>
+          <Button onClick={handleAddPerfume} variant="contained" disabled={addLoading}>
+            {addLoading ? '등록 중...' : '등록'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
