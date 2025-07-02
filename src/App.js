@@ -66,6 +66,8 @@ function App() {
   const [ownPerfumeIds, setOwnPerfumeIds] = useState([]);
   const [selectedOwnPerfumeIds, setSelectedOwnPerfumeIds] = useState([]);
   const [ownDialogOpen, setOwnDialogOpen] = useState(false);
+  const [ownSearchTerm, setOwnSearchTerm] = useState('');
+  const [ownBrand, setOwnBrand] = useState('');
 
   // 인증 관련 함수
   const handleAuthTabChange = (_, newValue) => {
@@ -253,6 +255,16 @@ function App() {
     };
     return colors[season] || '#E0E0E0';
   };
+
+  // 브랜드 리스트 추출
+  const brandList = Array.from(new Set(perfumes.map(p => p.brand))).sort();
+
+  // 모달 내 필터링된 리스트 생성
+  const filteredOwnPerfumes = perfumes.filter(p => {
+    const matchName = p.name.toLowerCase().includes(ownSearchTerm.toLowerCase());
+    const matchBrand = ownBrand ? p.brand === ownBrand : true;
+    return matchName && matchBrand;
+  });
 
   if (!auth.token) {
     return (
@@ -546,11 +558,36 @@ function App() {
       </Box>
 
       {/* 보유 향수 등록 다이얼로그 */}
-      <Dialog open={ownDialogOpen} onClose={closeOwnDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>보유 향수 선택</DialogTitle>
+      <Dialog open={ownDialogOpen} onClose={closeOwnDialog} maxWidth="md" fullWidth
+        PaperProps={{ sx: { minHeight: 600 } }}>
+        <DialogTitle sx={{ mb: 3 }}>보유 향수 선택</DialogTitle>
         <DialogContent>
-          <List>
-            {perfumes.map((perfume) => (
+          {/* 검색 영역 */}
+          <Box display="flex" gap={2} mb={2}>
+            <TextField
+              label="이름 검색"
+              value={ownSearchTerm}
+              onChange={e => setOwnSearchTerm(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+            <FormControl sx={{ minWidth: 180 }} margin="normal">
+              <InputLabel>브랜드</InputLabel>
+              <Select
+                value={ownBrand}
+                label="브랜드"
+                onChange={e => setOwnBrand(e.target.value)}
+              >
+                <MenuItem value="">전체</MenuItem>
+                {brandList.map(b => (
+                  <MenuItem key={b} value={b}>{b}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          {/* 필터링된 리스트 */}
+          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {filteredOwnPerfumes.map((perfume) => (
               <ListItem key={perfume.id} button onClick={() => handleOwnPerfumeToggle(perfume.id)}>
                 <ListItemIcon>
                   <Checkbox
@@ -563,6 +600,11 @@ function App() {
                 <ListItemText primary={perfume.name} secondary={perfume.brand} />
               </ListItem>
             ))}
+            {filteredOwnPerfumes.length === 0 && (
+              <ListItem>
+                <ListItemText primary="검색 결과가 없습니다." />
+              </ListItem>
+            )}
           </List>
         </DialogContent>
         <DialogActions>
