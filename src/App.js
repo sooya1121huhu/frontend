@@ -314,10 +314,16 @@ function App() {
   const brandList = Array.from(new Set(perfumes.map(p => p.brand))).sort();
 
   // 모달 내 필터링된 리스트 생성
-  const filteredOwnPerfumes = perfumes.filter(p => {
+  let filteredOwnPerfumes = perfumes.filter(p => {
     const matchName = p.name.toLowerCase().includes(ownSearchTerm.toLowerCase());
     const matchBrand = ownBrand ? p.brand === ownBrand : true;
     return matchName && matchBrand;
+  });
+  // 보유한 향수가 위로 오도록 정렬
+  filteredOwnPerfumes = filteredOwnPerfumes.sort((a, b) => {
+    const aOwned = selectedOwnPerfumeIds.includes(a.id) ? 0 : 1;
+    const bOwned = selectedOwnPerfumeIds.includes(b.id) ? 0 : 1;
+    return aOwned - bOwned;
   });
 
   if (!auth.token) {
@@ -497,7 +503,7 @@ function App() {
           variant="contained" 
           color="primary" 
           onClick={openAddDialog}
-          sx={{ boxShadow: 'none', '&:hover': { background: '#1565c0 !important' } }}
+          sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }}
         >
           향수 데이터베이스 추가
         </Button>
@@ -505,7 +511,7 @@ function App() {
           variant="contained" 
           color="primary" 
           onClick={openOwnDialog}
-          sx={{ boxShadow: 'none', '&:hover': { background: '#1565c0 !important' } }}
+          sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }}
         >
           + 보유 향수 등록
         </Button>
