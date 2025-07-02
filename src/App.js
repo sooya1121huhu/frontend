@@ -1,92 +1,576 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Grid,
+  Box,
+  Chip,
+  CircularProgress,
+  Alert,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  Divider,
+  Stack,
+  IconButton,
+  Tooltip,
+  Tabs,
+  Tab
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+  Favorite as FavoriteIcon,
+  FavoriteBorder as FavoriteBorderIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon
+} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Checkbox from '@mui/material/Checkbox';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import './App.css';
 
+const API_BASE_URL = '';
+
 function App() {
-  const [apiStatus, setApiStatus] = useState(null);
-  const [healthData, setHealthData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // 인증 상태
+  const [auth, setAuth] = useState({ token: localStorage.getItem('token'), username: localStorage.getItem('username') });
+  const [authTab, setAuthTab] = useState(0); // 0: 로그인, 1: 회원가입
+  const [authForm, setAuthForm] = useState({ username: '', password: '' });
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // 기존 상태
+  const [perfumes, setPerfumes] = useState([]);
+  const [filteredPerfumes, setFilteredPerfumes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSeason, setSelectedSeason] = useState('');
+  const [selectedWeather, setSelectedWeather] = useState('');
+  const [favorites, setFavorites] = useState([]);
 
-  const API_BASE_URL = 'http://localhost:3000';
+  // 내 보유 향수 관련 상태
+  const [ownPerfumeIds, setOwnPerfumeIds] = useState([]);
+  const [selectedOwnPerfumeIds, setSelectedOwnPerfumeIds] = useState([]);
+  const [ownDialogOpen, setOwnDialogOpen] = useState(false);
 
-  const checkApiStatus = async () => {
-    setLoading(true);
-    setError(null);
+  // 인증 관련 함수
+  const handleAuthTabChange = (_, newValue) => {
+    setAuthTab(newValue);
+    setAuthError('');
+  };
+  const handleAuthInput = (e) => {
+    setAuthForm({ ...authForm, [e.target.name]: e.target.value });
+  };
+  const handleLogin = async () => {
+    setAuthLoading(true);
+    setAuthError('');
     try {
-      const response = await axios.get(`${API_BASE_URL}/`);
-      setApiStatus(response.data);
+      const res = await fetch(`${API_BASE_URL}/api/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authForm)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', authForm.username);
+      setAuth({ token: data.token, username: authForm.username });
     } catch (err) {
-      setError('API 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+      setAuthError(err.message);
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
+    }
+  };
+  const handleRegister = async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authForm)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      setAuthTab(0);
+      setAuthForm({ username: authForm.username, password: '' });
+      setAuthError('회원가입 성공! 로그인 해주세요.');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    setAuth({ token: null, username: null });
+  };
+
+  // 내 보유 향수 관련 함수
+  const fetchOwnPerfumes = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/user-perfumes', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOwnPerfumeIds(data.data.map(up => up.perfume_id));
+      }
+    } catch (err) {
+      // 무시
     }
   };
 
-  const checkHealth = async () => {
-    setLoading(true);
-    setError(null);
+  const openOwnDialog = () => {
+    setSelectedOwnPerfumeIds(ownPerfumeIds);
+    setOwnDialogOpen(true);
+  };
+  const closeOwnDialog = () => setOwnDialogOpen(false);
+
+  const handleOwnPerfumeToggle = (id) => {
+    setSelectedOwnPerfumeIds((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  };
+
+  const handleOwnPerfumeSave = async () => {
+    const token = localStorage.getItem('token');
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/health`);
-      setHealthData(response.data);
+      const res = await fetch(`/api/user-perfumes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ perfumeIds: selectedOwnPerfumeIds })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || '보유 향수 등록 실패');
+      setOwnPerfumeIds(selectedOwnPerfumeIds);
+      setOwnDialogOpen(false);
     } catch (err) {
-      setError('헬스 체크에 실패했습니다.');
-    } finally {
-      setLoading(false);
+      alert(err.message || '보유 향수 등록 중 오류가 발생했습니다.');
     }
   };
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 API 상태 확인
-    checkApiStatus();
-  }, []);
+    if (auth.token) {
+      fetchPerfumes();
+      fetchOwnPerfumes();
+    }
+    // eslint-disable-next-line
+  }, [auth.token]);
+
+  useEffect(() => {
+    filterPerfumes();
+    // eslint-disable-next-line
+  }, [perfumes, searchTerm, selectedSeason, selectedWeather]);
+
+  const fetchPerfumes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/perfumes`);
+      if (!response.ok) {
+        throw new Error('향수 데이터를 불러오는데 실패했습니다.');
+      }
+      const result = await response.json();
+      setPerfumes(result.data || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterPerfumes = () => {
+    let filtered = [...perfumes];
+
+    // 검색어 필터링
+    if (searchTerm) {
+      filtered = filtered.filter(perfume =>
+        perfume.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        perfume.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        perfume.notes.some(note => note.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // 계절 필터링
+    if (selectedSeason) {
+      filtered = filtered.filter(perfume =>
+        perfume.season_tags.includes(selectedSeason)
+      );
+    }
+
+    // 날씨 필터링
+    if (selectedWeather) {
+      filtered = filtered.filter(perfume =>
+        perfume.weather_tags.includes(selectedWeather)
+      );
+    }
+
+    setFilteredPerfumes(filtered);
+  };
+
+  const toggleFavorite = (perfumeId) => {
+    setFavorites(prev => 
+      prev.includes(perfumeId) 
+        ? prev.filter(id => id !== perfumeId)
+        : [...prev, perfumeId]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedSeason('');
+    setSelectedWeather('');
+  };
+
+  const getSeasonColor = (season) => {
+    const colors = {
+      '봄': '#FFB6C1',
+      '여름': '#87CEEB',
+      '가을': '#DDA0DD',
+      '겨울': '#F0F8FF'
+    };
+    return colors[season] || '#E0E0E0';
+  };
+
+  if (!auth.token) {
+    return (
+      <Container maxWidth="xs" sx={{ mt: 12 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Tabs
+            value={authTab}
+            onChange={handleAuthTabChange}
+            centered
+            sx={{
+              background: '#fff',
+              mb: 3,
+              minHeight: 36,
+              '& .MuiTab-root': {
+                minWidth: 100,
+                minHeight: 36,
+                fontSize: 16,
+                mx: 1,
+                color: '#888',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+                background: '#fff !important',
+              },
+              '& .Mui-selected': {
+                color: '#1976d2 !important',
+                fontWeight: 700,
+              },
+              '& .MuiTabs-flexContainer': { gap: 2 }
+            }}
+            TabIndicatorProps={{ style: { height: 3, borderRadius: 2, background: '#1976d2' } }}
+          >
+            <Tab label="로그인" disableRipple />
+            <Tab label="회원가입" disableRipple />
+          </Tabs>
+          <TextField
+            fullWidth
+            label="아이디"
+            name="username"
+            value={authForm.username}
+            onChange={handleAuthInput}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="비밀번호"
+            name="password"
+            type="password"
+            value={authForm.password}
+            onChange={handleAuthInput}
+            sx={{ mb: 2 }}
+          />
+          {authError && <Alert severity={authError.includes('성공') ? 'success' : 'error'} sx={{ mb: 2 }}>{authError}</Alert>}
+          {authTab === 0 ? (
+            <Button
+              fullWidth
+              sx={{ background: '#1976d2', color: 'white', boxShadow: 'none', '&:hover': { background: '#1565c0' } }}
+              onClick={handleLogin}
+              disabled={authLoading}
+            >
+              로그인
+            </Button>
+          ) : (
+            <Button
+              fullWidth
+              sx={{ background: '#1976d2', color: 'white', boxShadow: 'none', '&:hover': { background: '#1565c0' } }}
+              onClick={handleRegister}
+              disabled={authLoading}
+            >
+              회원가입
+            </Button>
+          )}
+        </Paper>
+      </Container>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>React + API 연동 테스트</h1>
-        
-        <div className="api-section">
-          <h2>API 서버 상태</h2>
-          {loading && <p>로딩 중...</p>}
-          {error && <p className="error">{error}</p>}
-          {apiStatus && (
-            <div className="status-card">
-              <h3>서버 응답:</h3>
-              <p><strong>메시지:</strong> {apiStatus.message}</p>
-              <p><strong>시간:</strong> {new Date(apiStatus.timestamp).toLocaleString()}</p>
-            </div>
-          )}
-          <button onClick={checkApiStatus} disabled={loading}>
-            API 상태 다시 확인
-          </button>
-        </div>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Typography variant="subtitle1" sx={{ mr: 2 }}>{auth.username} 님</Typography>
+        <Button sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }} onClick={handleLogout}>로그아웃</Button>
+      </Box>
+      {/* 헤더 섹션 */}
+      <Box textAlign="center" mb={4}>
+        <Typography variant="h2" component="h1" gutterBottom color="primary" fontWeight="bold">
+          🎭 향수 추천 시스템
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+          당신의 취향과 상황에 맞는 완벽한 향수를 찾아보세요
+        </Typography>
+      </Box>
 
-        <div className="api-section">
-          <h2>헬스 체크</h2>
-          {healthData && (
-            <div className="status-card">
-              <h3>헬스 정보:</h3>
-              <p><strong>상태:</strong> {healthData.status}</p>
-              <p><strong>업타임:</strong> {Math.round(healthData.uptime)}초</p>
-              <p><strong>시간:</strong> {new Date(healthData.timestamp).toLocaleString()}</p>
-            </div>
-          )}
-          <button onClick={checkHealth} disabled={loading}>
-            헬스 체크 실행
-          </button>
-        </div>
+      {/* 검색 및 필터 섹션 */}
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              placeholder="향수명, 브랜드, 노트로 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth sx={{ minWidth: 180 }}>
+              <InputLabel>계절</InputLabel>
+              <Select
+                value={selectedSeason}
+                label="계절"
+                onChange={(e) => setSelectedSeason(e.target.value)}
+                sx={{ minWidth: 180 }}
+              >
+                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="봄">봄</MenuItem>
+                <MenuItem value="여름">여름</MenuItem>
+                <MenuItem value="가을">가을</MenuItem>
+                <MenuItem value="겨울">겨울</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth sx={{ minWidth: 180 }}>
+              <InputLabel>날씨</InputLabel>
+              <Select
+                value={selectedWeather}
+                label="날씨"
+                onChange={(e) => setSelectedWeather(e.target.value)}
+                sx={{ minWidth: 180 }}
+              >
+                <MenuItem value="">전체</MenuItem>
+                <MenuItem value="맑음">맑음</MenuItem>
+                <MenuItem value="흐림">흐림</MenuItem>
+                <MenuItem value="비">비</MenuItem>
+                <MenuItem value="더움">더움</MenuItem>
+                <MenuItem value="추움">추움</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Button
+              fullWidth
+              sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }}
+              onClick={clearFilters}
+              startIcon={<FilterIcon />}
+            >
+              초기화
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
 
-        <div className="instructions">
-          <h3>사용 방법:</h3>
-          <ol>
-            <li>API 서버가 포트 3000에서 실행 중인지 확인하세요</li>
-            <li>위의 버튼들을 클릭해서 API와의 연동을 테스트하세요</li>
-            <li>서버가 실행되지 않은 경우 에러 메시지가 표시됩니다</li>
-          </ol>
-        </div>
-      </header>
-    </div>
+      {/* 보유 향수 등록 버튼 */}
+      <Box mb={4} textAlign="right">
+        <Button sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }} onClick={openOwnDialog}>
+          + 보유 향수 등록
+        </Button>
+      </Box>
+
+      {/* 내 보유 향수 리스트 */}
+      <Box mb={6}>
+        <Typography variant="h5" gutterBottom>
+          🧴 내 보유 향수 ({filteredPerfumes.filter(p => ownPerfumeIds.includes(p.id)).length})
+        </Typography>
+        {ownPerfumeIds.length === 0 ? (
+          <Typography color="text.secondary">아직 등록된 보유 향수가 없습니다.</Typography>
+        ) : filteredPerfumes.filter(p => ownPerfumeIds.includes(p.id)).length === 0 ? (
+          <Typography color="text.secondary">검색 조건에 맞는 보유 향수가 없습니다.</Typography>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredPerfumes.filter(p => ownPerfumeIds.includes(p.id)).map((perfume) => (
+              <Grid item xs={12} sm={6} md={4} key={perfume.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    cursor: perfume.url ? 'pointer' : 'default',
+                    '&:hover': {
+                      transform: perfume.url ? 'translateY(-8px)' : 'none',
+                      boxShadow: perfume.url ? 6 : undefined,
+                      backgroundColor: perfume.url ? '#f5faff' : undefined
+                    }
+                  }}
+                  onClick={() => {
+                    if (perfume.url) window.open(perfume.url, '_blank', 'noopener');
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1, pt: 3 }}>
+                    {/* 브랜드 */}
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
+                      {perfume.brand}
+                    </Typography>
+                    
+                    {/* 향수명 */}
+                    <Typography variant="h6" component="h2" gutterBottom fontWeight="bold">
+                      {perfume.name}
+                    </Typography>
+
+                    {/* 주요 노트 */}
+                    <Box mb={2}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        주요 노트
+                      </Typography>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                        {perfume.notes.map((note, index) => (
+                          <Chip
+                            key={index}
+                            label={note}
+                            size="small"
+                            variant="outlined"
+                            sx={{ mb: 0.5 }}
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* 계절 및 날씨 태그 */}
+                    <Box mb={2}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        어울리는 상황
+                      </Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {perfume.season_tags.map((season, index) => (
+                          <Chip
+                            key={index}
+                            label={season}
+                            size="small"
+                            sx={{
+                              backgroundColor: getSeasonColor(season),
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        ))}
+                        {perfume.weather_tags.map((weather, index) => (
+                          <Chip
+                            key={index}
+                            label={weather}
+                            size="small"
+                            variant="outlined"
+                            sx={{ mb: 0.5 }}
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+
+                    {/* 분석 이유 */}
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      {perfume.analysis_reason}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Box>
+
+      {/* 보유 향수 등록 다이얼로그 */}
+      <Dialog open={ownDialogOpen} onClose={closeOwnDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>보유 향수 선택</DialogTitle>
+        <DialogContent>
+          <List>
+            {perfumes.map((perfume) => (
+              <ListItem key={perfume.id} button onClick={() => handleOwnPerfumeToggle(perfume.id)}>
+                <ListItemIcon>
+                  <Checkbox
+                    edge="start"
+                    checked={selectedOwnPerfumeIds.includes(perfume.id)}
+                    tabIndex={-1}
+                    disableRipple
+                  />
+                </ListItemIcon>
+                <ListItemText primary={perfume.name} secondary={perfume.brand} />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeOwnDialog}>취소</Button>
+          <Button onClick={handleOwnPerfumeSave} variant="contained">등록</Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 }
 
