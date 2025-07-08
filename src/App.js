@@ -43,7 +43,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import Autocomplete from '@mui/material/Autocomplete';
 import './App.css';
 
-const API_BASE_URL = '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 function App() {
   // 인증 상태
@@ -143,7 +143,7 @@ function App() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch('/api/user-perfumes', {
+      const res = await fetch(`${API_BASE_URL}/api/user-perfumes`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -172,7 +172,7 @@ function App() {
   const handleOwnPerfumeSave = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`/api/user-perfumes`, {
+      const res = await fetch(`${API_BASE_URL}/api/user-perfumes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ function App() {
     setAddLoading(true);
     setAddError('');
     try {
-      const res = await fetch('/api/perfumes', {
+      const res = await fetch(`${API_BASE_URL}/api/perfumes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(addForm)
