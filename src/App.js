@@ -18,7 +18,6 @@ import {
   Paper,
   Divider,
   Stack,
-  IconButton,
   Tabs,
   Tab
 } from '@mui/material';
