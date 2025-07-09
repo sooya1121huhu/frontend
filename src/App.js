@@ -19,17 +19,12 @@ import {
   Divider,
   Stack,
   IconButton,
-  Tooltip,
   Tabs,
   Tab
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  FilterList as FilterIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon
+  FilterList as FilterIcon
 } from '@mui/icons-material';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -61,16 +56,11 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeason, setSelectedSeason] = useState('');
   const [selectedWeather, setSelectedWeather] = useState('');
-  const [favorites, setFavorites] = useState([]);
-
-  // 내 보유 향수 관련 상태
   const [ownPerfumeIds, setOwnPerfumeIds] = useState([]);
   const [selectedOwnPerfumeIds, setSelectedOwnPerfumeIds] = useState([]);
   const [ownDialogOpen, setOwnDialogOpen] = useState(false);
   const [ownSearchTerm, setOwnSearchTerm] = useState('');
   const [ownBrand, setOwnBrand] = useState('');
-
-  // 향수 추가 관련 상태
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
@@ -284,14 +274,6 @@ function App() {
     }
 
     setFilteredPerfumes(filtered);
-  };
-
-  const toggleFavorite = (perfumeId) => {
-    setFavorites(prev => 
-      prev.includes(perfumeId) 
-        ? prev.filter(id => id !== perfumeId)
-        : [...prev, perfumeId]
-    );
   };
 
   const clearFilters = () => {
