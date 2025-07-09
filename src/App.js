@@ -37,7 +37,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import Autocomplete from '@mui/material/Autocomplete';
 import './App.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://13.209.98.222:8080';
 
 function App() {
   // 인증 상태
