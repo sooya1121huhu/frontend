@@ -1,70 +1,133 @@
-# Getting Started with Create React App
+# Perfume Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React 기반의 향수 프론트엔드 애플리케이션입니다.
 
-## Available Scripts
+## 기술 스택
 
-In the project directory, you can run:
+- React 19.1.0
+- Material-UI (MUI) 7.2.0
+- Axios 1.10.0
+- Create React App
 
-### `npm start`
+## 개발 환경 설정
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 필수 요구사항
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js 18.x 이상
+- npm 또는 yarn
 
-### `npm test`
+### 설치 및 실행
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+# 의존성 설치
+npm install
 
-### `npm run build`
+# 개발 서버 실행
+npm start
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# 테스트 실행
+npm test
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# 프로덕션 빌드
+npm run build
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 배포
 
-### `npm run eject`
+### S3 + CloudFront 배포
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+이 프로젝트는 GitHub Actions를 통해 AWS S3에 자동 배포됩니다.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### 1. S3 버킷 설정
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+# S3 버킷 생성 및 설정
+./setup-s3-deployment.sh <BUCKET_NAME> <REGION>
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# 예시
+./setup-s3-deployment.sh perfume-frontend-bucket ap-northeast-2
+```
 
-## Learn More
+#### 2. GitHub Secrets 설정
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+GitHub 저장소의 Settings > Secrets and variables > Actions에서 다음 시크릿을 설정하세요:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- `AWS_ACCESS_KEY_ID`: AWS 액세스 키 ID
+- `AWS_SECRET_ACCESS_KEY`: AWS 시크릿 액세스 키
+- `AWS_REGION`: AWS 리전 (예: ap-northeast-2)
+- `S3_BUCKET_NAME`: S3 버킷 이름
+- `CLOUDFRONT_DISTRIBUTION_ID`: CloudFront 배포 ID (선택사항)
 
-### Code Splitting
+#### 3. 배포 워크플로우
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- `main` 브랜치에 푸시하면 자동으로 S3에 배포됩니다
+- Pull Request 생성 시 별도의 S3 버킷에 미리보기 배포가 생성됩니다
+- CloudFront 캐시 무효화가 자동으로 실행됩니다
 
-### Analyzing the Bundle Size
+### EC2 배포
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+기존 EC2 배포 워크플로우도 유지됩니다:
 
-### Making a Progressive Web App
+- `deploy.yml`: EC2 서버 배포
+- `deploy-frontend.yml`: 프론트엔드 전용 EC2 배포
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 프로젝트 구조
 
-### Advanced Configuration
+```
+frontend/
+├── public/                 # 정적 파일
+├── src/                   # 소스 코드
+│   ├── components/        # React 컴포넌트
+│   ├── pages/            # 페이지 컴포넌트
+│   ├── services/         # API 서비스
+│   └── utils/            # 유틸리티 함수
+├── .github/workflows/    # GitHub Actions 워크플로우
+│   ├── deploy-s3.yml     # S3 배포
+│   ├── deploy.yml        # EC2 배포
+│   └── deploy-frontend.yml # 프론트엔드 전용 배포
+└── setup-s3-deployment.sh # S3 배포 설정 스크립트
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 개발 가이드
 
-### Deployment
+### 코드 스타일
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- ESLint 설정을 따릅니다
+- Prettier를 사용하여 코드 포맷팅을 유지합니다
 
-### `npm run build` fails to minify
+### 테스트
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```bash
+# 모든 테스트 실행
+npm test
+
+# 테스트 커버리지 확인
+npm test -- --coverage
+
+# 특정 테스트 파일 실행
+npm test -- --testPathPattern=ComponentName
+```
+
+### 빌드 최적화
+
+- 프로덕션 빌드는 자동으로 최적화됩니다
+- 코드 스플리팅이 적용됩니다
+- 번들 크기 분석: `npm run build && npx serve -s build`
+
+## 문제 해결
+
+### 빌드 실패
+
+1. Node.js 버전 확인 (18.x 이상 필요)
+2. `node_modules` 삭제 후 `npm install` 재실행
+3. 캐시 클리어: `npm run build -- --reset-cache`
+
+### 배포 실패
+
+1. GitHub Secrets 설정 확인
+2. AWS 권한 확인
+3. S3 버킷 정책 확인
+
+## 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
