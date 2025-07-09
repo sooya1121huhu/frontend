@@ -39,4 +39,4 @@ jobs:
           git pull origin main
           npm ci
           npm run build
-          rsync -av --delete build/ /var/www/html/ 
+          sudo rsync -av --delete build/ /var/www/html/ 
