@@ -41,8 +41,8 @@ jobs:
       - name: Deploy to S3
         if: github.ref == 'refs/heads/main'
         run: |
-          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }} --delete --cache-control "max-age=31536000,public"
-          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html --cache-control "no-cache,no-store,must-revalidate"
+          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }}/frontend --delete --cache-control "max-age=31536000,public"
+          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}/frontend/index.html --cache-control "no-cache,no-store,must-revalidate"
 
       - name: Invalidate CloudFront cache
         if: github.ref == 'refs/heads/main'
@@ -54,5 +54,5 @@ jobs:
       - name: Deploy to S3 (PR)
         if: github.event_name == 'pull_request'
         run: |
-          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }} --delete --cache-control "max-age=31536000,public"
-          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }}/index.html --cache-control "no-cache,no-store,must-revalidate" 
+          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }}/frontend --delete --cache-control "max-age=31536000,public"
+          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }}/frontend/index.html --cache-control "no-cache,no-store,must-revalidate" 
