@@ -33,9 +33,10 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: ${{ secrets.EC2_PORT }}
+        timeout: 1200s
         script: |
           cd /home/ubuntu/perfume_ys/frontend
           git pull origin main
           npm ci
           npm run build
-          sudo cp -r build/* /var/www/html/ 
+          rsync -av --delete build/ /var/www/html/ 
