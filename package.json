@@ -18,7 +18,6 @@
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-  // 1
   "scripts": {
     "start": "HOST=0.0.0.0 PORT=5173 react-scripts start",
     "build": "react-scripts build",
