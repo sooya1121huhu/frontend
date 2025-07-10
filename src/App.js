@@ -714,6 +714,9 @@ function PerfumeList() {
             )}
             sx={{ mb: 2 }}
           />
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginBottom: '8px' }}>
+            💡 팁: 베르가못/버가못, 로즈/장미, 머스크/화이트 머스크 등 유사한 노트는 자동으로 매칭됩니다.
+          </div>
           <Autocomplete
             multiple
             options={["봄", "여름", "가을", "겨울"]}
