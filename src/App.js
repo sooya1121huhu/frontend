@@ -303,13 +303,15 @@ function PerfumeList() {
     return colors[season] || '#E0E0E0';
   };
 
-  // 브랜드 리스트 추출
-  const brandList = Array.from(new Set(perfumes.map(p => p.brand))).sort();
+  // 브랜드 리스트 추출 (PerfumeBrand.name 기준)
+  const brandList = Array.from(
+    new Set(perfumes.map(p => p.PerfumeBrand?.name).filter(Boolean))
+  ).sort();
 
   // 모달 내 필터링된 리스트 생성
   let filteredOwnPerfumes = perfumes.filter(p => {
     const matchName = p.name.toLowerCase().includes(ownSearchTerm.toLowerCase());
-    const matchBrand = ownBrand ? p.brand === ownBrand : true;
+    const matchBrand = ownBrand ? p.PerfumeBrand?.name === ownBrand : true;
     return matchName && matchBrand;
   });
   // 보유한 향수가 위로 오도록 정렬
@@ -541,7 +543,7 @@ function PerfumeList() {
                   <CardContent sx={{ flexGrow: 1, pt: 3 }}>
                     {/* 브랜드 */}
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
-                      {perfume.brand}
+                      {perfume.PerfumeBrand?.name || '브랜드 없음'}
                     </Typography>
                     
                     {/* 향수명 */}
