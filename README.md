@@ -1,11 +1,12 @@
 # Perfume Frontend
 
-React 기반의 향수 프론트엔드 애플리케이션입니다.
+React 기반의 향수 프론트엔드 애플리케이션입니다. 향수 목록 조회, 상세 정보 확인, 유사 향수 추천 기능을 제공합니다.
 
 ## 기술 스택
 
 - React 19.1.0
 - Material-UI (MUI) 7.2.0
+- React Router DOM 6.x
 - Axios 1.10.0
 - Create React App
 
@@ -71,6 +72,21 @@ GitHub 저장소의 Settings > Secrets and variables > Actions에서 다음 시�
 - `deploy.yml`: EC2 서버 배포
 - `deploy-frontend.yml`: 프론트엔드 전용 EC2 배포
 
+## 주요 기능
+
+### 1. 향수 목록 페이지 (`/`)
+- 향수 목록 조회 및 검색
+- 계절/날씨별 필터링
+- 보유 향수 등록 및 관리
+- 향수 데이터베이스 추가
+
+### 2. 향수 상세 페이지 (`/perfumes/:id`)
+- 향수 상세 정보 조회
+- 주요 노트, 계절/날씨 태그 표시
+- 분석 이유 설명
+- 유사 향수 추천 (2개 이상 공통 노트)
+- 상품 링크 제공
+
 ## 프로젝트 구조
 
 ```
@@ -78,6 +94,7 @@ frontend/
 ├── public/                 # 정적 파일
 ├── src/                   # 소스 코드
 │   ├── components/        # React 컴포넌트
+│   │   └── PerfumeDetailPage.js  # 향수 상세 페이지
 │   ├── pages/            # 페이지 컴포넌트
 │   ├── services/         # API 서비스
 │   └── utils/            # 유틸리티 함수
@@ -98,7 +115,7 @@ frontend/
 ### 테스트
 
 ```bash
-# 모든 테스트 실행
+# React 컴포넌트 테스트
 npm test
 
 # 테스트 커버리지 확인
@@ -106,6 +123,9 @@ npm test -- --coverage
 
 # 특정 테스트 파일 실행
 npm test -- --testPathPattern=ComponentName
+
+# API 테스트 (향수 상세 페이지 API)
+npm run test:api
 ```
 
 ### 빌드 최적화

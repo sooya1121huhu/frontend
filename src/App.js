@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -35,11 +36,13 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Autocomplete from '@mui/material/Autocomplete';
+import PerfumeDetailPage from './components/PerfumeDetailPage';
 import './App.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
-function App() {
+function PerfumeList() {
+  const navigate = useNavigate();
   // 인증 상태
   const [auth, setAuth] = useState({ token: localStorage.getItem('token'), username: localStorage.getItem('username') });
   const [authTab, setAuthTab] = useState(0); // 0: 로그인, 1: 회원가입
@@ -517,16 +520,14 @@ function App() {
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'all 0.3s ease',
-                    cursor: perfume.url ? 'pointer' : 'default',
+                    cursor: 'pointer',
                     '&:hover': {
-                      transform: perfume.url ? 'translateY(-8px)' : 'none',
-                      boxShadow: perfume.url ? 6 : undefined,
-                      backgroundColor: perfume.url ? '#f5faff' : undefined
+                      transform: 'translateY(-8px)',
+                      boxShadow: 6,
+                      backgroundColor: '#f5faff'
                     }
                   }}
-                  onClick={() => {
-                    if (perfume.url) window.open(perfume.url, '_blank', 'noopener');
-                  }}
+                  onClick={() => navigate(`/perfumes/${perfume.id}`)}
                 >
                   <CardContent sx={{ flexGrow: 1, pt: 3 }}>
                     {/* 브랜드 */}
@@ -745,6 +746,17 @@ function App() {
         </DialogActions>
       </Dialog>
     </Container>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<PerfumeList />} />
+        <Route path="/perfumes/:id" element={<PerfumeDetailPage />} />
+      </Routes>
+    </Router>
   );
 }
 
