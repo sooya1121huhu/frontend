@@ -44,7 +44,5 @@
     ]
   },
   "proxy": "http://localhost:8080",
-  "homepage": "/frontend",
-  "devDependencies": {
-  }
+  "homepage": "/frontend"
 }
