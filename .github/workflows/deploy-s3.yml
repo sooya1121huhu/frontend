@@ -24,15 +24,14 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: ./frontend
 
       - name: List react-router-dom
         run: ls -al node_modules/react-router-dom
-        working-directory: ./frontend
 
       - name: Run tests
         run: npm test -- --watchAll=false --coverage --passWithNoTests
-        working-directory: ./frontend
+        env:
+          NODE_PATH: ${{ github.workspace }}/frontend/node_modules
 
       - name: Build
         run: npm run build
