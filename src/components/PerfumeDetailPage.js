@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -14,7 +14,6 @@ import {
   Divider,
   Stack,
   Paper,
-  Avatar
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -36,7 +35,7 @@ function PerfumeDetailPage() {
   const [error, setError] = useState(null);
 
   // 향수 상세 정보 조회
-  const fetchPerfumeDetail = async () => {
+  const fetchPerfumeDetail = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/perfumes/${id}`);
       const data = await response.json();
@@ -49,10 +48,10 @@ function PerfumeDetailPage() {
     } catch (err) {
       setError(err.message);
     }
-  };
+  }, [id]);
 
   // 유사 향수 조회
-  const fetchSimilarPerfumes = async () => {
+  const fetchSimilarPerfumes = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/perfumes/${id}/similar`);
       const data = await response.json();
@@ -66,7 +65,7 @@ function PerfumeDetailPage() {
       console.error('유사 향수 조회 실패:', err);
       // 유사 향수 조회 실패는 전체 페이지 에러로 처리하지 않음
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,7 +85,7 @@ function PerfumeDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, fetchPerfumeDetail, fetchSimilarPerfumes]);
 
   // 태그 색상 함수
   const getSeasonColor = (season) => {
