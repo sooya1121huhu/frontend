@@ -277,40 +277,61 @@ function PerfumeDetailPage() {
                 </Typography>
               ) : (
                 <Stack spacing={2}>
-                  {similarPerfumes.map((similar) => (
-                    <Card key={similar.id} variant="outlined" sx={{ cursor: 'pointer', mb: 2 }} onClick={() => navigate(`/perfumes/${similar.id}`)}>
-                      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                              {similar.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                              {similar.PerfumeBrand?.name || '브랜드 없음'}
-                            </Typography>
+                  {similarPerfumes.map((similar) => {
+                    const uniqueCommonNotes = [...new Set(similar.common_notes || [])];
+                    return (
+                      <Card key={similar.id} variant="outlined" sx={{ cursor: 'pointer', mb: 2 }} onClick={() => navigate(`/perfumes/${similar.id}`)}>
+                        <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                {similar.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {similar.PerfumeBrand?.name || '브랜드 없음'}
+                              </Typography>
+                            </Box>
+                            <Box textAlign="right">
+                              <span style={{
+                                display: 'inline-block',
+                                background: '#52c41a',
+                                color: 'white',
+                                borderRadius: 8,
+                                padding: '2px 8px',
+                                fontSize: 12
+                              }}>
+                                유사도: {uniqueCommonNotes.length}개
+                              </span>
+                            </Box>
                           </Box>
-                          <Box textAlign="right">
-                            <span style={{
-                              display: 'inline-block',
-                              background: '#52c41a',
-                              color: 'white',
-                              borderRadius: 8,
-                              padding: '2px 8px',
-                              fontSize: 12
-                            }}>
-                              유사도: {similar.common_notes_count}개
-                            </span>
-                          </Box>
-                        </Box>
-                        {/* 공통 노트 표시 */}
-                        {similar.common_notes && similar.common_notes.length > 0 && (
+                          {/* 공통 노트 표시 */}
+                          {uniqueCommonNotes.length > 0 && (
+                            <div style={{ marginTop: 8 }}>
+                              <strong>공통 노트:</strong>
+                              <div style={{ marginTop: 4 }}>
+                                {uniqueCommonNotes.map((note, noteIndex) => (
+                                  <span key={noteIndex} style={{
+                                    display: 'inline-block',
+                                    background: '#1976d2',
+                                    color: 'white',
+                                    borderRadius: 8,
+                                    padding: '2px 8px',
+                                    marginRight: 4,
+                                    marginBottom: 4,
+                                    fontSize: 12
+                                  }}>{note}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* 전체 노트 표시 */}
                           <div style={{ marginTop: 8 }}>
-                            <strong>공통 노트:</strong>
+                            <strong>전체 노트:</strong>
                             <div style={{ marginTop: 4 }}>
-                              {similar.common_notes.map((note, noteIndex) => (
+                              {similar.notes.map((note, noteIndex) => (
                                 <span key={noteIndex} style={{
                                   display: 'inline-block',
-                                  background: '#1976d2',
+                                  background: '#888',
                                   color: 'white',
                                   borderRadius: 8,
                                   padding: '2px 8px',
@@ -321,28 +342,10 @@ function PerfumeDetailPage() {
                               ))}
                             </div>
                           </div>
-                        )}
-                        {/* 전체 노트 표시 */}
-                        <div style={{ marginTop: 8 }}>
-                          <strong>전체 노트:</strong>
-                          <div style={{ marginTop: 4 }}>
-                            {similar.notes.map((note, noteIndex) => (
-                              <span key={noteIndex} style={{
-                                display: 'inline-block',
-                                background: '#888',
-                                color: 'white',
-                                borderRadius: 8,
-                                padding: '2px 8px',
-                                marginRight: 4,
-                                marginBottom: 4,
-                                fontSize: 12
-                              }}>{note}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </Stack>
               )}
             </CardContent>
