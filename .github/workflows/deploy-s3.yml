@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           # cache: 'npm'  # 이 줄을 삭제하거나 주석 처리
 
       - name: Install dependencies
