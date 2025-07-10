@@ -38,6 +38,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import Autocomplete from '@mui/material/Autocomplete';
 import PerfumeDetailPage from './components/PerfumeDetailPage';
 import './App.css';
+import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
@@ -65,16 +66,24 @@ function PerfumeList() {
   const [ownBrand, setOwnBrand] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addForm, setAddForm] = useState({
-    name: '',
-    url: '',
-    brand: '',
-    notes: [],
-    season_tags: [],
-    weather_tags: [],
-    analysis_reason: ''
+    name: '', brand_id: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
   });
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [brands, setBrands] = useState([]);
+
+  // 브랜드 목록 가져오기
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/brands`);
+        setBrands(response.data.data);
+      } catch (error) {
+        console.error('브랜드 목록 로딩 실패:', error);
+      }
+    };
+    fetchBrands();
+  }, []);
 
   // 인증 관련 함수
   const handleAuthTabChange = (_, newValue) => {
@@ -184,7 +193,7 @@ function PerfumeList() {
   // 향수 추가 관련 함수
   const openAddDialog = () => {
     setAddForm({
-      name: '', url: '', brand: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
+      name: '', brand_id: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
     });
     setAddError('');
     setAddDialogOpen(true);
@@ -197,7 +206,7 @@ function PerfumeList() {
 
   const handleAddPerfume = async () => {
     // 필수값 체크
-    if (!addForm.name || !addForm.brand || !addForm.notes.length || !addForm.season_tags.length || !addForm.weather_tags.length || !addForm.analysis_reason) {
+    if (!addForm.name || !addForm.brand_id || !addForm.notes.length || !addForm.season_tags.length || !addForm.weather_tags.length || !addForm.analysis_reason) {
       setAddError('모든 필수 항목을 입력해주세요.');
       return;
     }
@@ -680,21 +689,18 @@ function PerfumeList() {
             required
             margin="normal"
           />
-          <TextField
-            label="상세 정보 URL"
-            value={addForm.url}
-            onChange={e => handleAddFormChange('url', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="브랜드"
-            value={addForm.brand}
-            onChange={e => handleAddFormChange('brand', e.target.value)}
-            fullWidth
-            required
-            margin="normal"
-          />
+          <FormControl fullWidth required margin="normal">
+            <InputLabel>브랜드</InputLabel>
+            <Select
+              value={addForm.brand_id}
+              label="브랜드"
+              onChange={e => handleAddFormChange('brand_id', e.target.value)}
+            >
+              {brands.map(brand => (
+                <MenuItem key={brand.id} value={brand.id}>{brand.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Autocomplete
             multiple
             freeSolo

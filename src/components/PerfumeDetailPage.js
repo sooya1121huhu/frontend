@@ -176,19 +176,10 @@ function PerfumeDetailPage() {
           {perfume.name}
         </Typography>
         <Typography variant="h6" color="text.secondary" gutterBottom>
-          {perfume.brand}
+          {perfume.PerfumeBrand?.name || '브랜드 없음'}
         </Typography>
         <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-          {perfume.url && (
-            <Button
-              variant="outlined"
-              href={perfume.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              상품 링크 보기
-            </Button>
-          )}
+          {/* 상품 링크 버튼 제거됨 */}
         </Box>
       </Paper>
 
@@ -293,7 +284,7 @@ function PerfumeDetailPage() {
                           {similar.name}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                          {similar.brand}
+                          {similar.PerfumeBrand?.name || '브랜드 없음'}
                         </Typography>
                         
                         <Box sx={{ mb: 1 }}>
