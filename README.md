@@ -35,7 +35,7 @@ npm run build
 
 ## 배포
 
-### S3 + CloudFront 배포
+### S3 배포
 
 이 프로젝트는 GitHub Actions를 통해 AWS S3에 자동 배포됩니다.
 
@@ -57,13 +57,10 @@ GitHub 저장소의 Settings > Secrets and variables > Actions에서 다음 시�
 - `AWS_SECRET_ACCESS_KEY`: AWS 시크릿 액세스 키
 - `AWS_REGION`: AWS 리전 (예: ap-northeast-2)
 - `S3_BUCKET_NAME`: S3 버킷 이름
-- `CLOUDFRONT_DISTRIBUTION_ID`: CloudFront 배포 ID (선택사항)
 
 #### 3. 배포 워크플로우
 
 - `main` 브랜치에 푸시하면 자동으로 S3에 배포됩니다
-- Pull Request 생성 시 별도의 S3 버킷에 미리보기 배포가 생성됩니다
-- CloudFront 캐시 무효화가 자동으로 실행됩니다
 
 ### EC2 배포
 

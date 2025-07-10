@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build-and-deploy:
@@ -46,20 +43,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy to S3
-        if: github.ref == 'refs/heads/main'
         run: |
           aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }}/frontend --delete --cache-control "max-age=31536000,public"
-          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}/frontend/index.html --cache-control "no-cache,no-store,must-revalidate"
-
-      - name: Invalidate CloudFront cache
-        if: github.ref == 'refs/heads/main'
-        run: |
-          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-          fi
-
-      - name: Deploy to S3 (PR)
-        if: github.event_name == 'pull_request'
-        run: |
-          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }}/frontend --delete --cache-control "max-age=31536000,public"
-          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}-pr-${{ github.event.number }}/frontend/index.html --cache-control "no-cache,no-store,must-revalidate" 
+          aws s3 cp build/index.html s3://${{ secrets.S3_BUCKET_NAME }}/frontend/index.html --cache-control "no-cache,no-store,must-revalidate" 
