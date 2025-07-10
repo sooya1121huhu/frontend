@@ -46,6 +46,5 @@
   "proxy": "http://localhost:8080",
   "homepage": "/frontend",
   "devDependencies": {
-    "jest": "^27.5.1"
   }
 }
