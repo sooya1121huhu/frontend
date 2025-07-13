@@ -37,6 +37,8 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Autocomplete from '@mui/material/Autocomplete';
 import PerfumeDetailPage from './components/PerfumeDetailPage';
+import NoteDisplay from './components/NoteDisplay';
+import PerfumeForm from './components/PerfumeForm';
 import './App.css';
 import axios from 'axios';
 
@@ -57,27 +59,23 @@ function PerfumeList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSeason, setSelectedSeason] = useState('');
-  const [selectedWeather, setSelectedWeather] = useState('');
   const [ownPerfumeIds, setOwnPerfumeIds] = useState([]);
   const [selectedOwnPerfumeIds, setSelectedOwnPerfumeIds] = useState([]);
   const [ownDialogOpen, setOwnDialogOpen] = useState(false);
   const [ownSearchTerm, setOwnSearchTerm] = useState('');
   const [ownBrand, setOwnBrand] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [addForm, setAddForm] = useState({
-    name: '', brand_id: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
-  });
+  // addForm 상태는 PerfumeForm 컴포넌트로 이동
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
   const [brands, setBrands] = useState([]);
 
-  // 브랜드 목록 가져오기
+  // 브랜드 목록 가져오기 (perfumes_brand 테이블 사용)
   useEffect(() => {
     const fetchBrands = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/brands`);
-        setBrands(response.data.data);
+        setBrands(response.data.data || []);
       } catch (error) {
         console.error('브랜드 목록 로딩 실패:', error);
       }
@@ -97,18 +95,14 @@ function PerfumeList() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authForm)
-      });
-      const data = await res.json();
+      const response = await axios.post(`${API_BASE_URL}/api/users/login`, authForm);
+      const data = response.data;
       if (!data.success) throw new Error(data.message);
       localStorage.setItem('token', data.token);
       localStorage.setItem('username', authForm.username);
       setAuth({ token: data.token, username: authForm.username });
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.response?.data?.message || err.message);
     } finally {
       setAuthLoading(false);
     }
@@ -117,18 +111,14 @@ function PerfumeList() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authForm)
-      });
-      const data = await res.json();
+      const response = await axios.post(`${API_BASE_URL}/api/users/register`, authForm);
+      const data = response.data;
       if (!data.success) throw new Error(data.message);
       setAuthTab(0);
       setAuthForm({ username: authForm.username, password: '' });
       setAuthError('회원가입 성공! 로그인 해주세요.');
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.response?.data?.message || err.message);
     } finally {
       setAuthLoading(false);
     }
@@ -144,12 +134,12 @@ function PerfumeList() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/user-perfumes`, {
+      const response = await axios.get(`${API_BASE_URL}/api/user-perfumes`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      const data = await res.json();
+      const data = response.data;
       if (data.success) {
         setOwnPerfumeIds(data.data.map(up => up.perfume_id));
       }
@@ -173,57 +163,48 @@ function PerfumeList() {
   const handleOwnPerfumeSave = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/user-perfumes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ perfumeIds: selectedOwnPerfumeIds })
-      });
-      const data = await res.json();
+      const response = await axios.post(`${API_BASE_URL}/api/user-perfumes`, 
+        { perfumeIds: selectedOwnPerfumeIds },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      const data = response.data;
       if (!data.success) throw new Error(data.message || '보유 향수 등록 실패');
       setOwnPerfumeIds(selectedOwnPerfumeIds);
       setOwnDialogOpen(false);
     } catch (err) {
-      alert(err.message || '보유 향수 등록 중 오류가 발생했습니다.');
+      alert(err.response?.data?.message || err.message || '보유 향수 등록 중 오류가 발생했습니다.');
     }
   };
 
   // 향수 추가 관련 함수
   const openAddDialog = () => {
-    setAddForm({
-      name: '', brand_id: '', notes: [], season_tags: [], weather_tags: [], analysis_reason: ''
-    });
     setAddError('');
     setAddDialogOpen(true);
   };
   const closeAddDialog = () => setAddDialogOpen(false);
 
-  const handleAddFormChange = (field, value) => {
-    setAddForm(prev => ({ ...prev, [field]: value }));
-  };
+  // 향수 추가 폼 관련 함수들은 PerfumeForm 컴포넌트로 이동
 
-  const handleAddPerfume = async () => {
+  const handleAddPerfume = async (formData) => {
     // 필수값 체크
-    if (!addForm.name || !addForm.brand_id || !addForm.notes.length || !addForm.season_tags.length || !addForm.weather_tags.length || !addForm.analysis_reason) {
-      setAddError('모든 필수 항목을 입력해주세요.');
+    if (!formData.name || !formData.brand_id) {
+      setAddError('향수 이름과 브랜드는 필수입니다.');
       return;
     }
     setAddLoading(true);
     setAddError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/perfumes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(addForm)
-      });
-      const data = await res.json();
+      const response = await axios.post(`${API_BASE_URL}/api/perfumes`, formData);
+      const data = response.data;
       if (!data.success) throw new Error(data.message || '향수 추가 실패');
       setAddDialogOpen(false);
       fetchPerfumes();
     } catch (err) {
-      setAddError(err.message || '향수 추가 중 오류가 발생했습니다.');
+      setAddError(err.response?.data?.message || err.message || '향수 추가 중 오류가 발생했습니다.');
     } finally {
       setAddLoading(false);
     }
@@ -240,19 +221,15 @@ function PerfumeList() {
   useEffect(() => {
     filterPerfumes();
     // eslint-disable-next-line
-  }, [perfumes, searchTerm, selectedSeason, selectedWeather]);
+  }, [perfumes, searchTerm]);
 
   const fetchPerfumes = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/perfumes`);
-      if (!response.ok) {
-        throw new Error('향수 데이터를 불러오는데 실패했습니다.');
-      }
-      const result = await response.json();
-      setPerfumes(result.data || []);
+      const response = await axios.get(`${API_BASE_URL}/api/perfumes`);
+      setPerfumes(response.data.data || []);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -263,25 +240,19 @@ function PerfumeList() {
 
     // 검색어 필터링
     if (searchTerm) {
-      filtered = filtered.filter(perfume =>
-        perfume.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        perfume.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        perfume.notes.some(note => note.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    // 계절 필터링
-    if (selectedSeason) {
-      filtered = filtered.filter(perfume =>
-        perfume.season_tags.includes(selectedSeason)
-      );
-    }
-
-    // 날씨 필터링
-    if (selectedWeather) {
-      filtered = filtered.filter(perfume =>
-        perfume.weather_tags.includes(selectedWeather)
-      );
+      filtered = filtered.filter(perfume => {
+        const nameMatch = perfume.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const brandMatch = perfume.PerfumeBrand?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // 새로운 노트 구조와 기존 노트 구조 모두 검색
+        const topNotesMatch = perfume.top_notes?.some(note => note.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+        const middleNotesMatch = perfume.middle_notes?.some(note => note.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+        const baseNotesMatch = perfume.base_notes?.some(note => note.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+        const fragranceNotesMatch = perfume.fragrance_notes?.some(note => note.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+        const legacyNotesMatch = perfume.notes?.some(note => note.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+        
+        return nameMatch || brandMatch || topNotesMatch || middleNotesMatch || baseNotesMatch || fragranceNotesMatch || legacyNotesMatch;
+      });
     }
 
     setFilteredPerfumes(filtered);
@@ -289,19 +260,9 @@ function PerfumeList() {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedSeason('');
-    setSelectedWeather('');
   };
 
-  const getSeasonColor = (season) => {
-    const colors = {
-      '봄': '#FFB6C1',
-      '여름': '#87CEEB',
-      '가을': '#DDA0DD',
-      '겨울': '#F0F8FF'
-    };
-    return colors[season] || '#E0E0E0';
-  };
+
 
   // 브랜드 리스트 추출 (PerfumeBrand.name 기준)
   const brandList = Array.from(
@@ -433,7 +394,7 @@ function PerfumeList() {
       {/* 검색 및 필터 섹션 */}
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
         <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={8}>
             <TextField
               fullWidth
               placeholder="향수명, 브랜드, 노트로 검색..."
@@ -444,42 +405,7 @@ function PerfumeList() {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth sx={{ minWidth: 180 }}>
-              <InputLabel>계절</InputLabel>
-              <Select
-                value={selectedSeason}
-                label="계절"
-                onChange={(e) => setSelectedSeason(e.target.value)}
-                sx={{ minWidth: 180 }}
-              >
-                <MenuItem value="">전체</MenuItem>
-                <MenuItem value="봄">봄</MenuItem>
-                <MenuItem value="여름">여름</MenuItem>
-                <MenuItem value="가을">가을</MenuItem>
-                <MenuItem value="겨울">겨울</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth sx={{ minWidth: 180 }}>
-              <InputLabel>날씨</InputLabel>
-              <Select
-                value={selectedWeather}
-                label="날씨"
-                onChange={(e) => setSelectedWeather(e.target.value)}
-                sx={{ minWidth: 180 }}
-              >
-                <MenuItem value="">전체</MenuItem>
-                <MenuItem value="맑음">맑음</MenuItem>
-                <MenuItem value="흐림">흐림</MenuItem>
-                <MenuItem value="비">비</MenuItem>
-                <MenuItem value="더움">더움</MenuItem>
-                <MenuItem value="추움">추움</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
+          <Grid item xs={12} md={4}>
             <Button
               fullWidth
               sx={{ background: '#1976d2 !important', color: 'white !important', boxShadow: 'none !important', '&:hover': { background: '#1565c0 !important' } }}
@@ -553,68 +479,12 @@ function PerfumeList() {
 
                     {/* 주요 노트 */}
                     <Box mb={2}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        주요 노트
-                      </Typography>
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                        {perfume.notes.map((note, index) => (
-                          <Chip
-                            key={index}
-                            label={note}
-                            size="small"
-                            variant="outlined"
-                            sx={{ mb: 0.5 }}
-                          />
-                        ))}
-                      </Stack>
+                      <NoteDisplay perfume={perfume} showTitle={false} compact={true} />
                     </Box>
 
                     <Divider sx={{ my: 2 }} />
 
-                    {/* 계절 및 날씨 태그 */}
-                    <Box mb={2}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        어울리는 상황
-                      </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {perfume.season_tags.map((season, index) => (
-                          <Chip
-                            key={index}
-                            label={season}
-                            size="small"
-                            sx={{
-                              backgroundColor: getSeasonColor(season),
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }}
-                          />
-                        ))}
-                        {perfume.weather_tags.map((weather, index) => (
-                          <Chip
-                            key={index}
-                            label={weather}
-                            size="small"
-                            variant="outlined"
-                            sx={{ mb: 0.5 }}
-                          />
-                        ))}
-                      </Stack>
-                    </Box>
 
-                    {/* 분석 이유 */}
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary"
-                      sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}
-                    >
-                      {perfume.analysis_reason}
-                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -680,82 +550,14 @@ function PerfumeList() {
       </Dialog>
 
       {/* 향수 추가 모달 */}
-      <Dialog open={addDialogOpen} onClose={closeAddDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>향수 데이터베이스 추가</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="향수 이름"
-            value={addForm.name}
-            onChange={e => handleAddFormChange('name', e.target.value)}
-            fullWidth
-            required
-            margin="normal"
-          />
-          <FormControl fullWidth required margin="normal">
-            <InputLabel>브랜드</InputLabel>
-            <Select
-              value={addForm.brand_id}
-              label="브랜드"
-              onChange={e => handleAddFormChange('brand_id', e.target.value)}
-            >
-              {brands.map(brand => (
-                <MenuItem key={brand.id} value={brand.id}>{brand.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Autocomplete
-            multiple
-            freeSolo
-            options={[]}
-            value={addForm.notes}
-            onChange={(_, value) => handleAddFormChange('notes', value)}
-            renderInput={(params) => (
-              <TextField {...params} label="주요 노트 (쉼표 없이 엔터로 구분)" margin="normal" required />
-            )}
-            sx={{ mb: 2 }}
-          />
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginBottom: '8px' }}>
-            💡 팁: 베르가못/버가못, 로즈/장미, 머스크/화이트 머스크 등 유사한 노트는 자동으로 매칭됩니다.
-          </div>
-          <Autocomplete
-            multiple
-            options={["봄", "여름", "가을", "겨울"]}
-            value={addForm.season_tags}
-            onChange={(_, value) => handleAddFormChange('season_tags', value)}
-            renderInput={(params) => (
-              <TextField {...params} label="어울리는 계절" margin="normal" required />
-            )}
-            sx={{ mb: 2 }}
-          />
-          <Autocomplete
-            multiple
-            options={["맑음", "흐림", "비", "눈", "더움", "추움", "선선함", "습함", "따뜻함", "쌀쌀함"]}
-            value={addForm.weather_tags}
-            onChange={(_, value) => handleAddFormChange('weather_tags', value)}
-            renderInput={(params) => (
-              <TextField {...params} label="어울리는 날씨" margin="normal" required />
-            )}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="분석 이유"
-            value={addForm.analysis_reason}
-            onChange={e => handleAddFormChange('analysis_reason', e.target.value)}
-            fullWidth
-            required
-            multiline
-            minRows={3}
-            margin="normal"
-          />
-          {addError && <Box color="error.main" mb={2}>{addError}</Box>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeAddDialog}>취소</Button>
-          <Button onClick={handleAddPerfume} variant="contained" disabled={addLoading}>
-            {addLoading ? '등록 중...' : '등록'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <PerfumeForm
+        open={addDialogOpen}
+        onClose={closeAddDialog}
+        onSubmit={handleAddPerfume}
+        brands={brands}
+        loading={addLoading}
+        error={addError}
+      />
     </Container>
   );
 }

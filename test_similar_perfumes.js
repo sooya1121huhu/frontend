@@ -14,9 +14,7 @@ async function testPerfumeDetail() {
         brand: data.data.brand,
         name: data.data.name,
         notes: data.data.notes,
-        season_tags: data.data.season_tags,
-        weather_tags: data.data.weather_tags,
-        analysis_reason: data.data.analysis_reason
+        
       });
     } else {
       console.log('❌ 향수 상세 조회 실패:', data.message);
